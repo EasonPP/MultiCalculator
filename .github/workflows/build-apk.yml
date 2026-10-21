@@ -1,0 +1,39 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@v3
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+      - name: Build APK
+        run: |
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk MultiCalculator.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MultiCalculator-apk
+          path: MultiCalculator.apk
+      # 發佈到 Releases 頁面，手機用瀏覽器就能直接下載安裝
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: 多功能計算機 第 ${{ github.run_number }} 版
+          body: 手機下載 MultiCalculator.apk 後直接安裝（需允許「安裝不明來源的應用程式」）。
+          files: MultiCalculator.apk
+          make_latest: true
